@@ -1,0 +1,5 @@
+# This is an example configuration file for the SlackBot module. Supply your
+# own values and then rename this file to SlackBot.cfg
+[General]
+api_base_uri: https://slack.com/api/
+debug: False

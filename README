@@ -1,0 +1,10 @@
+SlackBot
+By Darren M. Struthers <dstruthers@gmail.com>
+
+OVERVIEW
+This is a basic Python module designed to make it easier to create bots for
+Slack Web-based group chat software.
+
+LICENSING
+This is free software licensed under the terms of the X11 license. See LICENSE
+for more information.

@@ -1,0 +1,1 @@
+class SlackBotError(Exception): pass
