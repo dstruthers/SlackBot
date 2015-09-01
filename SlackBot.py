@@ -1,5 +1,4 @@
-import json, re, urllib2, websocket
-from time import sleep, time
+import json, re, threading, time, urllib2, websocket
 
 from SlackBotConfig import *
 from SlackUser import *
@@ -19,7 +18,7 @@ class SlackBot:
         self.show_typing = False
         self.command_prefix = '!'
         self.commands = {}
-        self.start_time = time()
+        self.start_time = time.time()
 
     def add_event_listener(self, type, fn):
         '''Add high level event listener'''
@@ -38,7 +37,7 @@ class SlackBot:
                                   'type': 'typing',
                                   'channel': channel_id})
                 self.ws.send(msg)
-                sleep(1)
+                time.sleep(1)
                 
         msg = json.dumps({'id': self.next_message_id(),
                           'type': 'message',
@@ -50,6 +49,14 @@ class SlackBot:
         '''Returns unique id for use in sending messages'''
         self.message_id += 1
         return self.message_id
+
+    def get_channel_id(self, channel_name):
+        '''Convert channel name to channel id'''
+        for channel in self.channels:
+            if channel.name == channel_name:
+                return channel.id
+        else:
+            raise SlackBotError('Unknown channel: %s' % channel_name)
 
     @staticmethod
     def rtm_call(endpoint, **args):
@@ -92,6 +99,15 @@ class SlackBot:
                     fn(self, e)
 
             if len(self.commands) > 0 and e.type == 'message':
+                if not self.commands.has_key('help'):
+                    if re.search(r'^%shelp' % self.command_prefix, e.text):
+                        help_text = 'Available commands:'
+                        commands = self.commands.keys()
+                        commands.sort()
+                        for keyword in commands:
+                            help_text = '%s `%s`' % (help_text, keyword)
+                        self.say(e.channel, help_text)
+                            
                 for keyword in self.commands:
                     if re.search(r'^%s%s\b' % (self.command_prefix, keyword), e.text):
                         if DEBUG:
@@ -116,7 +132,6 @@ class SlackBot:
             for channel in start_result['channels']:
                 self.channels.append(SlackChannel.from_dict(channel))   
 
-
             self.ws = websocket.WebSocketApp(start_result['url'],
                                              on_message = on_message,
                                              on_error = on_error,
@@ -127,3 +142,7 @@ class SlackBot:
             self.ws.run_forever()
         else:
             raise SlackBotError('Could not initiate RTM session')
+
+    def thread(self, **args):
+        '''Create thread for execution of run() method'''
+        return threading.Thread(target=self.run, **args)
